@@ -34,7 +34,7 @@ build:
 		--build-arg BASE_IMAGE=${BASE_IMAGE} \
 		--build-arg TZ=${TZ} \
 		--build-arg APP_PORT=${APP_PORT} \
-		--target builder \
+		--target development \
 		.
 
 push:

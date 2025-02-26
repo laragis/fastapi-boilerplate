@@ -3,5 +3,6 @@ services:
     image: ${ORG_NAME}/${APP_SLUG}:${APP_VERSION}
     tty: true
     ports:
-      - "${APP_FORWARD_PORT}:${APP_PORT}"
-   
+      - "${APP_FORWARD_PORT}:${APP_PORT}" 
+    volumes:
+      - ./:/app
