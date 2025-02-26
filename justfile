@@ -1,74 +1,97 @@
+# 🛠️ Set positional arguments for Justfile.
+set positional-arguments
 
-# Load environment variables from .env file
+# 🎯 Define aliases for different environments to make calling them easier.
+alias dev := development
+alias test := testing
+alias stag := staging
+alias prod := production
 
-# export ENV := env('ENV', '')
-# export ENV_FILE := if "$ENV" == "" { ".env" } else { ".env.$ENV" }
+# 🏗️ Set the default environment mode (change this value as needed).
+mode := "local"
 
-# set dotenv-filename := shell('if [ -z "$ENV" ]; then echo ".env"; else echo ".env.$ENV"; fi')
-# set dotenv-load
+# 📄 Define the environment file based on the selected mode.
+# If running in local mode, use `.env`, otherwise use `.env.<mode>`
+COMPOSE_ENV_FILES := if mode == 'local' { ".env" } else { ".env." + mode }
 
-# Specify the default Docker Compose file
-COMPOSE_FILE := if "$ENV" == "" { "docker-compose.yaml" } else { "docker-compose.$ENV.yaml" }
+# 🏗️ Define the Docker Compose file based on the selected mode.
+# If running in local mode, use `docker-compose.yaml`,
+# Otherwise, use `docker-compose.<mode>.yaml`
+COMPOSE_FILE := if mode == 'local' { "docker-compose.yaml" } else { "docker-compose." + mode + ".yaml" }
 
-[positional-arguments]
-env +args:
-  #!/usr/bin/env sh
-  mode=$1
-  valid_modes="production staging local"
-  if echo "$valid_modes" | grep -wq "$mode"; then
-    shift 1
-    just --dotenv-filename .env.$mode $@
-  else
-    just --dotenv-filename .env $@
-  fi
-  
-@test:
-  echo "Hello $APP_ENV"
+# 🛠️ Build the Docker Compose command options.
+# This combines the compose file and the environment file dynamically.
+COMPOSE_OPTIONS := "-f " + COMPOSE_FILE + " --env-file " + COMPOSE_ENV_FILES
 
-# Default command to list all available commands.
+# 📜 Default command to list all available commands when running `just` without arguments.
 default:
     @just --list
 
-# build: Build Docker images.
-@build:
+# 🚀 Local environment target.
+@local +args:
+  echo "🚀 Running on **Local** environment. This is your personal development machine. 🛠️"
+  just --dotenv-filename .env.$0 mode=$0 {{args}}
+
+# 👨‍💻 Development environment target.
+@development +args:
+  echo "👨‍💻 Running on **Development** environment. Used for coding, debugging, and integration. 🔧"
+  just --dotenv-filename .env.$0 mode=$0 {{args}}
+
+# 🧪 Testing environment target.
+@testing +args:
+  echo "🧪 Running on **Testing** environment. Used for QA and automated tests. ✅"
+  just --dotenv-filename .env.$0 mode=$0 {{args}}
+
+# 📦 Staging environment target.
+@staging +args:
+  echo "📦 Running on **Staging** environment. Mirrors production for final verification. 🔄"
+  just --dotenv-filename .env.$0 mode=$0 {{args}}
+
+# 🌍 Production environment target.
+@production +args:
+  echo "🌍 Running on **Production** environment. Live system used by real users. ⚡"
+  just --dotenv-filename .env.$0 mode=$0 {{args}}
+
+# 🏗️ Build Docker images
+@build *args:
   echo "🔨 Building Docker images..."
-  docker compose -f {{COMPOSE_FILE}} build
+  docker compose {{COMPOSE_OPTIONS}} build {{args}}
 
-# up: Start up all containers.
-@up:
+# 🚀 Start up Docker containers
+@up *args:
   echo "🚀 Starting up containers..."
-  docker compose -f {{COMPOSE_FILE}} up -d --remove-orphans
+  docker compose {{COMPOSE_OPTIONS}} up -d --remove-orphans {{args}}
 
-# down: Stop all running containers.
-@down:
+# 🛑 Stop and remove running containers
+@down *args:
   echo "🛑 Stopping containers..."
-  docker compose -f {{COMPOSE_FILE}} down
+  docker compose {{COMPOSE_OPTIONS}} down {{args}}
 
-# prune: Remove all stopped containers and unused volumes.
-@prune:
-  echo "🗑️  Removing containers and volumes..."
-  docker compose -f {{COMPOSE_FILE}} down -v
+# 🗑️  Stop containers and remove volumes
+@prune *args:
+  echo "🗑️ Removing containers and volumes..."
+  docker compose {{COMPOSE_OPTIONS}} down  -v {{args}}
 
-# shell: Open a shell inside the running container.
+# 🐚 Open a shell inside a running container
 @shell *args:
   echo "🐚 Opening a shell inside the container..."
   if [ -n "{{args}}" ]; then \
-    docker compose -f {{COMPOSE_FILE}} exec --user={{args}} $APP_SERVICE bash; \
+    docker compose {{COMPOSE_OPTIONS}} exec --user={{args}} $APP_SERVICE bash; \
   else \
-    docker compose -f {{COMPOSE_FILE}} exec $APP_SERVICE bash; \
+    docker compose {{COMPOSE_OPTIONS}} exec $APP_SERVICE bash; \
   fi
 
-# exec: Execute a command inside a running container.
+# 💻 Execute a command inside a running container
 @exec +args:
   echo "💻 Executing command inside container..."
-  docker compose -f {{COMPOSE_FILE}} exec $APP_SERVICE {{args}}
+  docker compose {{COMPOSE_OPTIONS}} exec $APP_SERVICE {{args}}
 
-# logs: View container logs.
+# 📜 Fetch and follow logs from containers
 @logs *args:
   echo "📜 Fetching logs..."
-  docker compose -f {{COMPOSE_FILE}} logs -f {{args}}
+  docker compose {{COMPOSE_OPTIONS}} logs -f {{args}}
 
-# push: Push Docker images to registry.
+# 📤 Push Docker images to a container registry
 @push *args:
   echo "📤 Pushing images to registry..."
   if [ "{{args}}" = "latest" ]; then \
@@ -76,9 +99,11 @@ default:
     docker push ${ORG_NAME}/${APP_SLUG}:latest; \
   else \
     docker push $ORG_NAME/$APP_SLUG:$APP_VERSION; \
-  fi 
+  fi
 
+# 🔒 Generate or update the `poetry.lock` file
 @lock:
+  echo "🔒 Locking dependencies with Poetry..."
   docker run --rm \
     -u "$(id -u):$(id -g)" \
     -v "$(pwd):/app" \
