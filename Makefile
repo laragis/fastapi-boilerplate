@@ -30,7 +30,6 @@ down-v:
 build:
 	docker buildx build \
 		--tag ${ORG_NAME}/${APP_SLUG}:${APP_VERSION} \
-		--tag ${ORG_NAME}/${APP_SLUG}:latest \
 		--build-arg BASE_IMAGE=${BASE_IMAGE} \
 		--build-arg TZ=${TZ} \
 		--build-arg APP_PORT=${APP_PORT} \
@@ -41,6 +40,15 @@ push:
 	docker push ${ORG_NAME}/${APP_SLUG}:${APP_VERSION}
 
 push-latest:
+	docker tag ${ORG_NAME}/${APP_SLUG}:${APP_VERSION} ${ORG_NAME}/${APP_SLUG}:latest
 	docker push ${ORG_NAME}/${APP_SLUG}:latest
 
 push-all: push push-latest
+
+lock:
+	docker run --rm \
+    -u "$(id -u):$(id -g)" \
+    -v "$(pwd):/app" \
+    -w /app \
+    ttungbmt/python:3.11 \
+    poetry lock
