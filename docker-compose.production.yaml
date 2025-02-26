@@ -1,0 +1,14 @@
+services:
+  fastapi:
+    image: ${ORG_NAME}/${APP_SLUG}:${APP_VERSION}
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - BASE_IMAGE=${BASE_IMAGE}
+        - TZ=${TZ}
+        - APP_PORT=${APP_PORT}
+      target: production
+    ports:
+      - "${APP_FORWARD_PORT}:${APP_PORT}" 
+

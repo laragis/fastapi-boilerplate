@@ -1,9 +1,12 @@
 #!/bin/bash
 
-# Exit script in case of error
-set -e
+# Exit immediately if a command exits with a non-zero status.
+set -o errexit
+# Prevent errors in a pipeline from being masked.
+set -o pipefail
+# Treat unset variables as an error and exit immediately.
+set -o nounset
 
-echo $"\n\n\n"
 echo "-----------------------------------------------------"
 echo "STARTING FASTAPI ENTRYPOINT $(date)"
 echo "-----------------------------------------------------"
