@@ -30,7 +30,7 @@ default:
 # 🚀 Local environment target.
 @local +args:
   echo "🚀 Running on **Local** environment. This is your personal development machine. 🛠️"
-  just --dotenv-filename .env.$0 mode=$0 {{args}}
+  just --dotenv-filename .env mode=$0 {{args}}
 
 # 👨‍💻 Development environment target.
 @development +args:
