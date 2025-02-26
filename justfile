@@ -1,8 +1,26 @@
 # Load environment variables from .env file
+
+export ENV := env('ENV', '')
+export ENV_FILE := if "$ENV" == "" { ".env" } else { ".env.$ENV" }
+
+set dotenv-filename := shell('if [ -z "$ENV" ]; then echo ".env"; else echo ".env.$ENV"; fi')
 set dotenv-load
 
+@env mode +args:
+  just --dotenv-filename .env.{{mode}} {{args}}
+
+@test:
+  echo "Hello World"
+
 # Specify the default Docker Compose file
-COMPOSE_FILE := "docker-compose.${ENV:-local}.yaml"
+COMPOSE_FILE := if "$ENV" == "" { "docker-compose.yaml" } else { "docker-compose.$ENV.yaml" }
+
+@env mode +args:
+  just --dotenv-filename .env.{{mode}} {{args}}
+
+@test:
+  echo "Hello World"
+
 
 # Default command to list all available commands.
 default:
