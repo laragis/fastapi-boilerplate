@@ -4,5 +4,5 @@ services:
     tty: true
     ports:
       - "${APP_FORWARD_PORT}:${APP_PORT}" 
-    volumes:
-      - ./:/app
+    # volumes:
+    #   - ./:/app

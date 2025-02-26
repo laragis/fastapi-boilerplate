@@ -11,7 +11,10 @@ FROM ${BASE_IMAGE} AS base
 LABEL maintainer="Truong Thanh Tung <ttungbmt@gmail.com>"
 
 ARG TZ=UTC
+ARG POETRY_VERSION=2.1.1
+
 ARG APP_PATH=/app
+ENV APP_PATH=${APP_PATH}
 
 # Set Environment Variables
 ENV DEBIAN_FRONTEND=noninteractive
@@ -20,17 +23,17 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 # Add a non-root user to prevent files being created with root permissions on host machine.
-ARG PU=fastapi
-ARG PG=fastapi
+ARG PU=laragis
+ARG PG=laragis
 ARG PUID=1000
-ENV PUID ${PUID}
+ENV PUID=${PUID}
 ARG PGID=1000
-ARG PGID=1000
-ENV PGID ${PGID}
+ENV PGID=${PGID}
 
-# RUN userdel -r ${PU}
-RUN groupadd --force -g ${PGID} ${PG}
-RUN useradd -u ${PUID} -g ${PG} -s /bin/bash -m ${PU}
+RUN getent passwd ${PUID} >/dev/null 2>&1 && userdel -r ${PU} || true && \
+    getent group ${PGID} >/dev/null 2>&1 && groupdel ${PG} || true && \
+    groupadd --force -g ${PGID} ${PG} && \
+    useradd -u ${PUID} -g ${PG} -s /bin/bash -m ${PU}
 
 # Install system tools and libraries.
 # Utilize --mount flag of Docker Buildx to cache downloaded packages, avoiding repeated downloads
@@ -54,7 +57,6 @@ ENV \
     PYTHONDONTWRITEBYTECODE=1 \
     \
     # pip --------------------------------------
-    PIP_NO_CACHE_DIR=off \
     # Disables unnecessary version check for pip    
     PIP_DISABLE_PIP_VERSION_CHECK=on \
     # Sets a timeout for pip operations to prevent hangs
@@ -80,12 +82,16 @@ RUN python -m venv $VIRTUAL_ENV && \
     python -m pip install --upgrade pip
     # pip cache purge && rm -Rf /root/.cache/pip/http
 
-ENV APP_PATH=${APP_PATH}
+# Install poetry - respects $POETRY_VERSION & $POETRY_HOME
+# The --mount will mount the buildx cache directory to where
+# Poetry and Pip store their cache so that they can re-use it
+RUN --mount=type=cache,target=/root/.cache \
+    curl -sSL https://install.python-poetry.org | python3 -
 
 # Set the working directory inside the container
 WORKDIR ${APP_PATH}
 
-RUN mkdir -p ${APP_PATH}
+RUN mkdir -p ${APP_PATH} 
 
 ########################################################
 # BUILDER
@@ -93,20 +99,7 @@ RUN mkdir -p ${APP_PATH}
 ########################################################
 FROM base AS builder
 
-ARG POETRY_VERSION=1.7.1
 ARG POETRY_INSTALL_OPTS='--no-root --only main'
-
-# Set environment variables for Poetry
-ENV \
-    # Poetry -----------------------------------
-    # Specifies the Poetry version to use
-    POETRY_VERSION=$POETRY_VERSION
-
-# Install poetry - respects $POETRY_VERSION & $POETRY_HOME
-# The --mount will mount the buildx cache directory to where
-# Poetry and Pip store their cache so that they can re-use it
-RUN --mount=type=cache,target=/root/.cache \
-    curl -sSL https://install.python-poetry.org | python3 - && poetry --version && poetry config --list
 
 # Set the working directory inside the container
 WORKDIR ${APP_PATH}
@@ -121,6 +114,9 @@ RUN --mount=type=cache,target=/root/.cache \
 # RUNNER
 ########################################################
 FROM base AS runner
+
+ARG APP_PORT=8080
+ENV APP_PORT=${APP_PORT}
 
 # Set the working directory inside the container
 WORKDIR ${APP_PATH}
@@ -141,13 +137,15 @@ COPY ./entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 # Expose the port the app runs on
-EXPOSE 8000
+EXPOSE ${APP_PORT}
 
 ########################################################
 # DEVELOPMENT
 # Image used during development / testing
 ########################################################
 FROM runner AS development
+
+ENV APP_ENV=development
 
 # Not installing the app itself in the venv to keep venv and app in separate paths
 ARG POETRY_INSTALL_OPTS='--no-root'
@@ -186,6 +184,8 @@ RUN coverage report --fail-under 95
 # Final image used for runtime
 ########################################################
 FROM runner AS production
+
+ENV APP_ENV=production
 
 # Set the working directory inside the container
 WORKDIR ${APP_PATH}
