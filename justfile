@@ -66,8 +66,16 @@ init:
   fi 
   just check-lock
 
-@install:
-  echo "Hello World"
+install *args:
+  #!/usr/bin/env bash
+  uid=$(id -u)
+  gid=$(id -g)
+
+  docker run --rm -it \
+    -v "$(pwd):/app" \
+    -w /app \
+    ttungbmt/python:3.11 \
+    bash -c "python -m venv --copies .venv && poetry install --no-root {{args}} && chown -R $uid:$gid .venv"
 
 # 🏗️ Build Docker images
 @build *args:
