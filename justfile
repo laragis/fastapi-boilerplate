@@ -25,8 +25,8 @@ COMPOSE_FILE := if mode == 'local' { "docker-compose.yaml" } else { "docker-comp
 # This combines the compose file and the environment file dynamically.
 COMPOSE_OPTIONS := "-f " + COMPOSE_FILE + " --env-file " + ENV_FILE
 
-export SHARE_TOKEN := "b392681b-93dd-4a5a-9ee6-03e656d89be3"
-export SHARE_DASHBOARD := "4040"
+SHARE_TOKEN := env("SHARE_TOKEN", "b392681b-93dd-4a5a-9ee6-03e656d89be3")
+SHARE_DASHBOARD := env("SHARE_DASHBOARD", "4040")
 
 # 📜 Default command to list all available commands when running `just` without arguments.
 default:
@@ -115,8 +115,8 @@ default:
 share:
   #!/usr/bin/env bash
   docker run \
-    --init --rm --add-host=host.docker.internal:host-gateway -p "$SHARE_DASHBOARD":4040 -t beyondcodegmbh/expose-server:latest \
-    share http://host.docker.internal:"$APP_FORWARD_PORT" --auth="$SHARE_TOKEN"
+    --init --rm --add-host=host.docker.internal:host-gateway -p "{{SHARE_DASHBOARD}}":4040 -t beyondcodegmbh/expose-server:latest \
+    share http://host.docker.internal:"$APP_FORWARD_PORT" --auth="{{SHARE_TOKEN}}"
 
 check-env mode:
   #!/usr/bin/env bash
