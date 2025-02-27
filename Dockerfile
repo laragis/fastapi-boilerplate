@@ -150,6 +150,14 @@ ENV APP_ENV=development
 # Not installing the app itself in the venv to keep venv and app in separate paths
 ARG POETRY_INSTALL_OPTS='--no-root'
 
+# Install system tools and libraries.
+# Utilize --mount flag of Docker Buildx to cache downloaded packages, avoiding repeated downloads
+RUN --mount=type=cache,id=apt-build,target=/var/cache/apt \
+    apt-get update && \ 
+    apt-get install -y --no-install-recommends \
+        tmux \
+        zsh
+
 # Set the working directory inside the container
 WORKDIR ${APP_PATH}
 

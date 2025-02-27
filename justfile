@@ -1,6 +1,8 @@
 # 🛠️ Set positional arguments for Justfile.
 set positional-arguments
 
+set dotenv-path := "./"
+
 # 🎯 Define aliases for different environments to make calling them easier.
 alias dev := development
 alias test := testing
@@ -12,7 +14,7 @@ mode := "local"
 
 # 📄 Define the environment file based on the selected mode.
 # If running in local mode, use `.env`, otherwise use `.env.<mode>`
-COMPOSE_ENV_FILES := if mode == 'local' { ".env" } else { ".env." + mode }
+ENV_FILE := if mode == 'local' { ".env" } else { ".env." + mode }
 
 # 🏗️ Define the Docker Compose file based on the selected mode.
 # If running in local mode, use `docker-compose.yaml`,
@@ -21,7 +23,10 @@ COMPOSE_FILE := if mode == 'local' { "docker-compose.yaml" } else { "docker-comp
 
 # 🛠️ Build the Docker Compose command options.
 # This combines the compose file and the environment file dynamically.
-COMPOSE_OPTIONS := "-f " + COMPOSE_FILE + " --env-file " + COMPOSE_ENV_FILES
+COMPOSE_OPTIONS := "-f " + COMPOSE_FILE + " --env-file " + ENV_FILE
+
+export SHARE_TOKEN := "b392681b-93dd-4a5a-9ee6-03e656d89be3"
+export SHARE_DASHBOARD := "4040"
 
 # 📜 Default command to list all available commands when running `just` without arguments.
 default:
@@ -51,6 +56,18 @@ default:
 @production +args:
   echo "🌍 Running on **Production** environment. Live system used by real users. ⚡"
   just --dotenv-filename .env.$0 mode=$0 {{args}}
+
+# 🌱 Initialize the app 
+init:
+  #!/usr/bin/env bash
+  if [ ! -f {{ENV_FILE}} ]; then
+    cp .env.example {{ENV_FILE}}
+    sed -i 's/^APP_ENV=local$/APP_ENV=production/' {{ENV_FILE}}
+  fi 
+  just check-lock
+
+@install:
+  echo "Hello World"
 
 # 🏗️ Build Docker images
 @build *args:
@@ -101,12 +118,22 @@ default:
     docker push $ORG_NAME/$APP_SLUG:$APP_VERSION; \
   fi
 
+# 🌍 Share the local application via Expose 
+share:
+  #!/usr/bin/env bash
+  docker run \
+    --init --rm --add-host=host.docker.internal:host-gateway -p "$SHARE_DASHBOARD":4040 -t beyondcodegmbh/expose-server:latest \
+    share http://host.docker.internal:"$APP_FORWARD_PORT" --auth="$SHARE_TOKEN"
+
 # 🔒 Generate or update the `poetry.lock` file
-@lock:
-  echo "🔒 Locking dependencies with Poetry..."
-  docker run --rm \
-    -u "$(id -u):$(id -g)" \
-    -v "$(pwd):/app" \
-    -w /app \
-    ttungbmt/python:3.11 \
-    poetry lock
+check-lock:
+  #!/usr/bin/env bash
+  if [ ! -f poetry.lock ]; then
+    echo "🔒 Locking dependencies with Poetry..."
+    docker run --rm \
+      -u "$(id -u):$(id -g)" \
+      -v "$(pwd):/app" \
+      -w /app \
+      ttungbmt/python:3.11 \
+      poetry lock
+  fi
