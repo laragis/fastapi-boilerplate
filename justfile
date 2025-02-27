@@ -62,26 +62,6 @@ default:
   echo "🌍 Running on **Production** environment. Live system used by real users. ⚡"
   just --dotenv-filename .env.$0 mode=$0 {{args}}
 
-# 🌱 Initialize the app 
-init:
-  #!/usr/bin/env bash
-  if [ ! -f {{ENV_FILE}} ]; then
-    cp .env.example {{ENV_FILE}}
-    sed -i 's/^APP_ENV=local$/APP_ENV={{mode}}/' {{ENV_FILE}}
-  fi 
-  just check-lock
-
-install *args:
-  #!/usr/bin/env bash
-  uid=$(id -u)
-  gid=$(id -g)
-
-  docker run --rm -it \
-    -v "$(pwd):/app" \
-    -w /app \
-    ttungbmt/python:3.11 \
-    bash -c "python -m venv --copies .venv && poetry install --no-root {{args}} && chown -R $uid:$gid .venv"
-
 # 🏗️ Build Docker images
 @build *args:
   echo "🔨 Building Docker images..."
@@ -146,6 +126,17 @@ check-env mode:
     exit 1
   fi
 
+### Custom ################################################
+
+# 🌱 Initialize the app 
+init:
+  #!/usr/bin/env bash
+  if [ ! -f {{ENV_FILE}} ]; then
+    cp .env.example {{ENV_FILE}}
+    sed -i 's/^APP_ENV=local$/APP_ENV={{mode}}/' {{ENV_FILE}}
+  fi 
+  just check-lock
+
 # 🔒 Generate or update the `poetry.lock` file
 check-lock:
   #!/usr/bin/env bash
@@ -158,3 +149,14 @@ check-lock:
       ttungbmt/python:3.11 \
       poetry lock
   fi
+
+install *args:
+  #!/usr/bin/env bash
+  uid=$(id -u)
+  gid=$(id -g)
+
+  docker run --rm -it \
+    -v "$(pwd):/app" \
+    -w /app \
+    ttungbmt/python:3.11 \
+    bash -c "python -m venv --copies .venv && poetry install --no-root {{args}} && chown -R $uid:$gid .venv"
