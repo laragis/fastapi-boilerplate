@@ -34,26 +34,31 @@ default:
 
 # 🚀 Local environment target.
 @local +args:
+  check-env $0
   echo "🚀 Running on **Local** environment. This is your personal development machine. 🛠️"
   just --dotenv-filename .env mode=$0 {{args}}
 
 # 👨‍💻 Development environment target.
 @development +args:
+  check-env $0
   echo "👨‍💻 Running on **Development** environment. Used for coding, debugging, and integration. 🔧"
   just --dotenv-filename .env.$0 mode=$0 {{args}}
 
 # 🧪 Testing environment target.
 @testing +args:
+  check-env $0
   echo "🧪 Running on **Testing** environment. Used for QA and automated tests. ✅"
   just --dotenv-filename .env.$0 mode=$0 {{args}}
 
 # 📦 Staging environment target.
 @staging +args:
+  check-env $0
   echo "📦 Running on **Staging** environment. Mirrors production for final verification. 🔄"
   just --dotenv-filename .env.$0 mode=$0 {{args}}
 
 # 🌍 Production environment target.
 @production +args:
+  check-env $0
   echo "🌍 Running on **Production** environment. Live system used by real users. ⚡"
   just --dotenv-filename .env.$0 mode=$0 {{args}}
 
@@ -132,6 +137,14 @@ share:
   docker run \
     --init --rm --add-host=host.docker.internal:host-gateway -p "$SHARE_DASHBOARD":4040 -t beyondcodegmbh/expose-server:latest \
     share http://host.docker.internal:"$APP_FORWARD_PORT" --auth="$SHARE_TOKEN"
+
+check-env mode:
+  #!/usr/bin/env bash
+  env_file=$([ mode = "local" ] && echo ".env" || echo ".env.{{mode}}")
+  if [ ! -f "$env_file" ]; then
+    echo "❌ '$env_file' does not exist. Aborting."
+    exit 1
+  fi
 
 # 🔒 Generate or update the `poetry.lock` file
 check-lock:
