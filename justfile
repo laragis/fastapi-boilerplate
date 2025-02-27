@@ -30,7 +30,7 @@ export SHARE_DASHBOARD := "4040"
 
 # 📜 Default command to list all available commands when running `just` without arguments.
 default:
-    @just --list
+  @just --list
 
 # 🚀 Local environment target.
 @local +args:
@@ -62,7 +62,7 @@ init:
   #!/usr/bin/env bash
   if [ ! -f {{ENV_FILE}} ]; then
     cp .env.example {{ENV_FILE}}
-    sed -i 's/^APP_ENV=local$/APP_ENV=production/' {{ENV_FILE}}
+    sed -i 's/^APP_ENV=local$/APP_ENV={{mode}}/' {{ENV_FILE}}
   fi 
   just check-lock
 
