@@ -1,5 +1,5 @@
 services:
-  fastapi:
+  app:
     image: ${ORG_NAME}/${APP_SLUG}:${APP_VERSION}-dev
     build:
       context: .
@@ -11,5 +11,7 @@ services:
       target: development
     ports:
       - "${APP_FORWARD_PORT}:${APP_PORT}" 
+    entrypoint: /entrypoint.sh
     volumes:
       - ./:/app
+      - ./entrypoint.sh:/entrypoint.sh

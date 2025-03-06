@@ -1,5 +1,5 @@
 services:
-  fastapi:
+  app:
     image: ${ORG_NAME}/${APP_SLUG}:${APP_VERSION}
     build:
       context: .

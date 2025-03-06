@@ -1,8 +1,6 @@
 # 🛠️ Set positional arguments for Justfile.
 set positional-arguments
 
-set dotenv-path := "./"
-
 # 🎯 Define aliases for different environments to make calling them easier.
 alias dev := development
 alias test := testing
@@ -10,7 +8,7 @@ alias stag := staging
 alias prod := production
 
 # 🏗️ Set the default environment mode (change this value as needed).
-mode := "local"
+mode := "production"
 
 # 📄 Define the environment file based on the selected mode.
 # If running in local mode, use `.env`, otherwise use `.env.<mode>`
@@ -86,15 +84,27 @@ default:
 @shell *args:
   echo "🐚 Opening a shell inside the container..."
   if [ -n "{{args}}" ]; then \
-    docker compose {{COMPOSE_OPTIONS}} exec --user={{args}} $APP_SERVICE bash; \
+    docker compose {{COMPOSE_OPTIONS}} exec --user={{args}} ${APP_SERVICE} bash; \
   else \
-    docker compose {{COMPOSE_OPTIONS}} exec $APP_SERVICE bash; \
+    docker compose {{COMPOSE_OPTIONS}} exec ${APP_SERVICE} bash; \
   fi
 
 # 💻 Execute a command inside a running container
 @exec +args:
   echo "💻 Executing command inside container..."
-  docker compose {{COMPOSE_OPTIONS}} exec $APP_SERVICE {{args}}
+  docker compose {{COMPOSE_OPTIONS}} exec ${APP_SERVICE} {{args}}
+
+# 🧹 Lint: Format and lint the codebase
+@linting-code:
+  echo "🧹 Running linting checks..."
+  docker build --target lint .
+  docker run --rm lint
+
+# ✅ Test: Run unit and integration tests
+@testing-code:
+  echo "✅ Running tests..."
+  docker build --target test .
+  docker run --rm test
 
 # 📜 Fetch and follow logs from containers
 @logs *args:
