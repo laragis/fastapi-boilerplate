@@ -3,14 +3,9 @@ from fastapi import APIRouter, HTTPException, status
 from app.models import geofencing_models
 from app.services import geofencing_services
 
-router = APIRouter(
-    prefix="/geofencing",
-    tags=["Geofencing"],
-    responses={404: {"description": "Endpoint not found"}},
-)
+router = APIRouter()
 
-
-@router.post("/")
+@router.post("/v1")
 def geofencing(model: geofencing_models.RequestModel):
     """
     This function performs geofencing checks based on provided radius or geometry.
